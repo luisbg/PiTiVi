@@ -92,9 +92,18 @@ class Formatter(Signallable, Loggable):
 
     def loadProject(self, location):
         try:
-            self._loadProjectUnchecked(location)
+            name = self._projectNameFromURI(location)
+            self._validateUri(location)
+            file_object = open(location.split('://', 1)[1])
+            self._loadProjectUnchecked(file_object, name, location)
         except FormatterError, e:
             self.emit("new-project-failed", location, e)
+
+    def loadProjectFromFileObject(self, file_object):
+        try:
+            self._loadProjectUnchecked(file_object, None, None)
+        except FormatterError, e:
+            self.emit("new-project-failed", str(file_object), e)
 
     def _validateUri(self, uri):
         # check if the location is
@@ -105,7 +114,7 @@ class Formatter(Signallable, Loggable):
         if not uri_is_valid(uri) or not uri_is_reachable(uri):
             raise FormatterURIError()
 
-    def _loadProjectUnchecked(self, location):
+    def _loadProjectUnchecked(self, file_object, name, location):
         """
         Loads the project from the given location.
 
@@ -121,15 +130,14 @@ class Formatter(Signallable, Loggable):
         project = self.newProject()
         self.emit("new-project-created", project)
 
-        project.name = self._projectNameFromURI(location)
+        project.name = name
         project.uri = location
 
         self.log("location:%s, project:%r", location, project)
-        self._validateUri(location)
 
         # parse the format (subclasses)
         # FIXME : maybe have a convenience method for opening a location
-        self._loadProject(location, project)
+        self._loadProject(file_object, project)
 
     def _projectNameFromURI(self, uri):
         path = urlparse(uri).path

@@ -689,10 +689,10 @@ class ElementTreeFormatter(Formatter):
 
         return True
 
-    def _loadProject(self, location, project):
-        self.debug("location:%s, project:%r", location, project)
+    def _loadProject(self, file_object, project):
+        self.debug("location:%s, project:%r", str(file_object), project)
         # open the given location
-        self._context.rootelement = parse(location.split('://', 1)[1])
+        self._context.rootelement = parse(file_object)
         self.factoriesnode = self._context.rootelement.find("factories")
         self.timelinenode = self._context.rootelement.find("timeline")
         self._settingsnode = self._context.rootelement.find("export-settings")
