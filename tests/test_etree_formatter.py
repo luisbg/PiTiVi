@@ -23,6 +23,8 @@ from unittest import TestCase
 import gst
 from xml.etree.ElementTree import Element, SubElement
 
+from StringIO import StringIO
+
 from pitivi.reflect import qual
 from pitivi.formatters.etree import ElementTreeFormatter, version,\
                                     indent, tostring
@@ -730,6 +732,33 @@ class TestFormatterLoad(TestCase):
         f = file("/tmp/untitled.pptv", "w")
         f.write(tostring(element))
         f.close()
+
+    def testLoadProjectFromFileObject(self):
+        self.loaded = False
+
+        def newProjectLoadedCb(formatter, project):
+            self.loaded = True
+
+        file_object = StringIO("<pitivi></pitivi>")
+        lines = ('<pitivi formatter="etree" version="0.1">',
+            '<factories><sources /></factories><timeline><tracks><track>',
+            '<stream caps="video/x-raw-yuv, width=(int)720, height=(int)576, ',
+            'pixel-aspect-ratio=(fraction)1/1, framerate=(fraction)25/1" id="0"',
+            ' name="None" type="pitivi.stream.VideoStream" />',
+            '<track-objects /></track><track>',
+            '<stream caps="audio/x-raw-int, rate=(int)44100, channels=(int)2;',
+            ' audio/x-raw-float, rate=(int)44100, channels=(int)2" id="1" ',
+            ' name="None" type="pitivi.stream.AudioStream" />',
+            '<track-objects /></track></tracks><timeline-objects />',
+            '</timeline></pitivi>')
+        for l in lines:
+            file_object.write(l)
+        file_object.seek(0)
+
+        self.formatter.connect("new-project-loaded", newProjectLoadedCb)
+        self.formatter.loadProjectFromFileObject(file_object)
+
+        self.failUnless(self.loaded)
 
     ## following test is disabled until I figure out a better way of
     ## testing the mapping system.
