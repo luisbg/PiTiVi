@@ -35,6 +35,10 @@ from gi.repository import GooCanvas
 
 from gi.repository import Gdk
 
+from gi.repository import GtkClutter
+GtkClutter.init([])
+from gi.repository import Clutter
+
 from gettext import gettext as _
 from os.path import join
 
@@ -165,63 +169,53 @@ ui = '''
 '''
 
 
-class TimelineCanvas(GooCanvas.Canvas, Zoomable, Loggable):
-    """
-        The GooCanvas widget representing the timeline
-    """
+class MyRect(Clutter.Rectangle):
+    __gtype_name__ = 'MyRect'
 
-    __gtype_name__ = 'TimelineCanvas'
+    def __init__(self):
+        super(MyRect, self).__init__()
+        self.set_color(Clutter.Color.new(50, 80, 120, 255))
+        self.set_border_color(Clutter.Color.new(120, 120, 120, 120))
+        self.set_border_width(1)
+        self.set_size(10000, 200)
 
-    _tracks = None
+        self.set_reactive(True)
+        self.connect('button-press-event', self.on_button_press)
+
+    def on_button_press(self, widget, event):
+        pass
+
+    def do_motion_event(self, event):
+        pass
+
+
+class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
+    __gtype_name__ = 'ClutterTimeline'
 
     def __init__(self, instance, timeline=None):
-        GooCanvas.Canvas.__init__(self)
+        super(ClutterTimeline, self).__init__()
         Zoomable.__init__(self)
         Loggable.__init__(self)
-        self.app = instance
+        self.stage = self.get_stage()
+
+        #LEGACY
         self._tracks = []
         self.height = CANVAS_SPACING
 
         self._block_size_request = False
-        self.props.integer_layout = True
-        self.props.automatic_bounds = False
-        self.props.clear_background = False
-        self.get_root_item().set_simple_transform(0, 2.0, 1.0, 0)
 
-        self._createUI()
         self._timeline = timeline
         self.settings = instance.settings
         self.connect("draw", self.drawCb)
 
-    def _createUI(self):
-        self._cursor = ARROW
-        root = self.get_root_item()
-        self.tracks = GooCanvas.CanvasGroup()
-        self.tracks.set_simple_transform(0, 0, 1.0, 0)
-        root.add_child(self.tracks, -1)
-        self._marquee = GooCanvas.CanvasRect(
-            parent=root,
-            stroke_color_rgba=0x33CCFF66,
-            fill_color_rgba=0x33CCFF66,
-            visibility=GooCanvas.CanvasItemVisibility.INVISIBLE)
-        self._playhead = GooCanvas.CanvasRect(
-            y=-10,
-            parent=root,
-            line_width=1,
-            fill_color_rgba=0x000000FF,
-            stroke_color_rgba=0xFFFFFFFF,
-            width=3)
-        self._snap_indicator = GooCanvas.CanvasRect(
-            parent=root, x=0, y=0, width=3, line_width=0.5,
-            fill_color_rgba=0x85c0e6FF,
-            stroke_color_rgba=0x294f95FF)
-        self.connect("size-allocate", self._size_allocate_cb)
-        root.connect("motion-notify-event", self._selectionDrag)
-        root.connect("button-press-event", self._selectionStart)
-        root.connect("button-release-event", self._selectionEnd)
-        self.connect("button-release-event", self._buttonReleasedCb)
-        # add some padding for the horizontal scrollbar
-        self.set_size_request(-1, self.height)
+        self.app = instance
+        #self.stage.connect('key-press-event', self.key_press) # This Works!
+        #texture = Clutter.Texture.new_from_file("/home/mathieu/Pictures/1344547891223.jpg")
+        #texture.set_position(0, 0)
+        #self.stage.add_actor(texture)
+        self.set_size_request(-1, -1)
+
+        self.show_all()
 
     def from_event(self, event):
         x, y = event.x, event.y
@@ -449,6 +443,7 @@ class TimelineCanvas(GooCanvas.Canvas, Zoomable, Loggable):
     timeline = property(getTimeline, setTimeline, None, "The timeline property")
 
     def _trackAddedCb(self, timeline, track):
+        return
         track = Track(self.app, track, self._timeline)
         self._tracks.append(track)
         track.set_canvas(self)
@@ -1031,9 +1026,9 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
         self.attach(rulerframe, 1, 2, 0, 1, yoptions=0)
 
         # proportional timeline
-        self._canvas = TimelineCanvas(self.app)
+        self._canvas = ClutterTimeline(self.app)
         self._canvas.get_accessible().set_name("timeline canvas")  # used for dogtail
-        self._root_item = self._canvas.get_root_item()
+        #self._root_item = self._canvas.get_root_item()
         self.attach(self._canvas, 1, 2, 1, 2)
 
         # scrollbar
@@ -1135,7 +1130,7 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
         self._canvas.connect("drag-drop", self._dragDropCb)
         self._canvas.connect("drag-motion", self._dragMotionCb)
         self._canvas.connect("key-press-event", self._keyPressEventCb)
-        self._canvas.connect("scroll-event", self._scrollEventCb)
+        self._canvas.stage.connect("scroll-event", self._scrollEventCb)
 
 ## Event callbacks
     def _keyPressEventCb(self, unused_widget, event):
@@ -1399,14 +1394,14 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
 ## Zooming and Scrolling
 
     def _scrollEventCb(self, canvas, event):
-        if event.get_state() & Gdk.ModifierType.SHIFT_MASK:
+        if event.flags & Clutter.ModifierType.SHIFT_MASK:
             # shift + scroll => vertical (up/down) scroll
             if event.direction == Gdk.ScrollDirection.UP:
                 self.scroll_up()
             elif event.direction == Gdk.ScrollDirection.DOWN:
                 self.scroll_down()
-            event.props.state &= ~Gdk.SHIFT_MASK
-        elif event.get_state() & Gdk.ModifierType.CONTROL_MASK:
+            event.state &= ~gtk.gdk.SHIFT_MASK
+        if event.flags & Clutter.ModifierType.CONTROL_MASK:
             # zoom + scroll => zooming (up: zoom in)
             if event.direction == Gdk.ScrollDirection.UP:
                 Zoomable.zoomIn()
@@ -1427,10 +1422,13 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
         return True
 
     def scroll_left(self):
+        print "got scroll event"
         self._hscrollbar.set_value(self._hscrollbar.get_value() -
             self.hadj.props.page_size ** (2.0 / 3.0))
+        print self._hscrollbar.get_value() - self.hadj.props.page_size ** (2.0 / 3.0)
 
     def scroll_right(self):
+        print "got scroll event too"
         self._hscrollbar.set_value(self._hscrollbar.get_value() +
             self.hadj.props.page_size ** (2.0 / 3.0))
 
@@ -1448,6 +1446,7 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
             0 - self.vadj.get_value(), 1.0, 0)
 
     def _updateScrollPosition(self, adjustment):
+        print "lol"
         self.unsureVadjHeight()
 
     def _zoomAdjustmentChangedCb(self, adjustment):
