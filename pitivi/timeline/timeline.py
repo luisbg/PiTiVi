@@ -38,6 +38,7 @@ from gi.repository import Gdk
 from gi.repository import GtkClutter
 GtkClutter.init([])
 from gi.repository import Clutter
+Clutter.init([])
 
 from gettext import gettext as _
 from os.path import join
@@ -167,26 +168,6 @@ ui = '''
     <accelerator action="Keyframe" />
 </ui>
 '''
-
-
-class MyRect(Clutter.Rectangle):
-    __gtype_name__ = 'MyRect'
-
-    def __init__(self):
-        super(MyRect, self).__init__()
-        self.set_color(Clutter.Color.new(50, 80, 120, 255))
-        self.set_border_color(Clutter.Color.new(120, 120, 120, 120))
-        self.set_border_width(1)
-        self.set_size(10000, 200)
-
-        self.set_reactive(True)
-        self.connect('button-press-event', self.on_button_press)
-
-    def on_button_press(self, widget, event):
-        pass
-
-    def do_motion_event(self, event):
-        pass
 
 
 class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
@@ -443,17 +424,15 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
     timeline = property(getTimeline, setTimeline, None, "The timeline property")
 
     def _trackAddedCb(self, timeline, track):
-        return
         track = Track(self.app, track, self._timeline)
         self._tracks.append(track)
-        track.set_canvas(self)
-        self.tracks.add_child(track, -1)
+        self.stage.add_child(track)
         self.regroupTracks()
 
     def _trackRemovedCb(self, unused_timeline, position):
         track = self._tracks[position]
         del self._tracks[position]
-        track.remove()
+        self.stage.remove_child(track)
         self.regroupTracks()
 
     def regroupTracks(self):
@@ -464,10 +443,12 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
         """
         height = 0
         for i, track in enumerate(self._tracks):
-            track.set_simple_transform(0, height, 1, 0)
+            #track.set_position(0, height)
+            #track.set_scale(1, 1)
+             #track.set_simple_transform(0, height, 1, 0)
             height += track.height
         self.height = height
-        self._request_size()
+        #self._request_size()
 
     def updateTracks(self):
         self.debug("Updating all TrackObjects")
@@ -1442,8 +1423,8 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
 
     def unsureVadjHeight(self):
         self._scroll_pos_ns = Zoomable.pixelToNs(self.hadj.get_value())
-        self._root_item.set_simple_transform(0 - self.hadj.get_value(),
-            0 - self.vadj.get_value(), 1.0, 0)
+        #self._root_item.set_simple_transform(0 - self.hadj.get_value(),
+        #    0 - self.vadj.get_value(), 1.0, 0)
 
     def _updateScrollPosition(self, adjustment):
         print "lol"
