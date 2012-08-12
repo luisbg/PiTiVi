@@ -20,6 +20,8 @@
 # Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
 # Boston, MA 02110-1301, USA.
 
+from gi.repository import Clutter
+
 import cairo
 import os.path
 
@@ -377,7 +379,7 @@ def raise_new(self, above):
 setattr(GooCanvas.CanvasItem, "raise_", raise_new)
 
 
-class TrackObject(View, GooCanvas.CanvasGroup, Zoomable, Loggable):
+class TrackObject(View, Clutter.Rectangle, Zoomable, Loggable):
 
     class Controller(TrackObjectController):
 
@@ -419,8 +421,15 @@ class TrackObject(View, GooCanvas.CanvasGroup, Zoomable, Loggable):
                 timeline.selection.setToObj(element, SELECT)
 
     def __init__(self, instance, element, track, timeline, utrack):
-        GooCanvas.CanvasGroup.__init__(self)
-        View.__init__(self, instance)
+        Clutter.Rectangle.__init__(self)
+
+        self.set_reactive(True)
+
+        #HUGE FIXME ^^
+        try:
+            View.__init__(self, instance)
+        except:
+            pass
         Zoomable.__init__(self)
         Loggable.__init__(self)
         self.ref = Zoomable.nsToPixel(10000000000)
@@ -434,34 +443,34 @@ class TrackObject(View, GooCanvas.CanvasGroup, Zoomable, Loggable):
         self._settings = None
         self.movable = True
 
-        self.bg = GooCanvas.CanvasRect(height=self.height, line_width=1)
-
-        self.name = GooCanvas.CanvasText(
-            x=NAME_HOFFSET + NAME_PADDING,
-            y=NAME_VOFFSET + NAME_PADDING,
-            operator=cairo.OPERATOR_ADD,
-            alignment=Pango.Alignment.LEFT)
-        self.namebg = GooCanvas.CanvasRect(
-            radius_x=2,
-            radius_y=2,
-            x=NAME_HOFFSET,
-            y=NAME_VOFFSET,
-            line_width=0)
-
-        self.start_handle = StartHandle(self.app, element, timeline, height=self.height)
-        self.end_handle = EndHandle(self.app, element, timeline, height=self.height)
-
-        self._selec_indic = GooCanvas.CanvasRect(
-            visibility=GooCanvas.CanvasItemVisibility.INVISIBLE,
-            line_width=0.0,
-            height=self.height)
-
+#        self.bg = goocanvas.Rect(height=self.height, line_width=1)
+#
+#        self.name = goocanvas.Text(
+#            x=NAME_HOFFSET + NAME_PADDING,
+#            y=NAME_VOFFSET + NAME_PADDING,
+#            operator=cairo.OPERATOR_ADD,
+#            alignment=pango.ALIGN_LEFT)
+#        self.namebg = goocanvas.Rect(
+#            radius_x=2,
+#            radius_y=2,
+#            x=NAME_HOFFSET,
+#            y=NAME_VOFFSET,
+#            line_width=0)
+#
+#        self.start_handle = StartHandle(self.app, element, timeline, height=self.height)
+#        self.end_handle = EndHandle(self.app, element, timeline, height=self.height)
+#
+#        self._selec_indic = goocanvas.Rect(
+#            visibility=goocanvas.ITEM_INVISIBLE,
+#            line_width=0.0,
+#            height=self.height)
+#
         self.element = element
         element.selected = Selected()
         element.selected.connect("selected-changed", self.selectedChangedCb)
 
         self.settings = instance.settings
-        self.unfocus()
+#        self.unfocus()
 
 ## Properties
 
@@ -469,12 +478,12 @@ class TrackObject(View, GooCanvas.CanvasGroup, Zoomable, Loggable):
 
     def setHeight(self, height):
         self._height = height
-        self.bg.props.height = height
-        self.start_handle.height = height
-        self.end_handle.height = height
-        self._selec_indic.props.height = height
-        if hasattr(self, "preview"):
-            self.preview.height = height
+        self.props.height = height
+        #self.start_handle.height = height
+        #self.end_handle.height = height
+        #self._selec_indic.props.height = height
+        #if hasattr(self, "preview"):
+        #    self.preview.height = height
         self._update()
 
     def getHeight(self):
@@ -558,14 +567,14 @@ class TrackObject(View, GooCanvas.CanvasGroup, Zoomable, Loggable):
 
     def _clipAppearanceSettingsChangedCb(self, *args):
         color = self._getColor()
-        self.bg.props.fill_color_rgba = color
-        self.namebg.props.fill_color_rgba = color
-        self._selec_indic.props.fill_color_rgba = self.settings.selectedColor
-        self.name.props.font = self.settings.clipFontDesc
-        self.name.props.fill_color_rgba = self.settings.clipFontColor
-        twidth, theight = text_size(self.name)
-        self.namewidth = twidth
-        self.nameheight = theight
+        self.set_color(color)
+        #self.namebg.props.fill_color_rgba = color
+        #self._selec_indic.props.fill_color_rgba = self.settings.selectedColor
+        #self.name.props.font = self.settings.clipFontDesc
+        #self.name.props.fill_color_rgba = self.settings.clipFontColor
+        #width, theight = text_size(self.name)
+        #self.namewidth = twidth
+        #self.nameheight = theight
         self._update()
 
 ## element signals
@@ -665,29 +674,31 @@ class TrackObject(View, GooCanvas.CanvasGroup, Zoomable, Loggable):
             y -= self.app.gui.timeline_ui.controls.getHeightOfTrack(GES.TrackType.VIDEO)
 
         # Setting new position
-        self.set_simple_transform(x, y, 1, 0)
+        self.props.x = x
+        self.props.y = y
+        #self.set_simple_transform(x, y, 1, 0)
         width = self.nsToPixel(self.element.get_duration())
 
         # Handle a duration of 0
-        handles_width = self.start_handle.props.width
-        min_width = handles_width * 2
-        if width < min_width:
-            width = min_width
-        w = width - handles_width
-        self.name.props.clip_path = "M%g,%g h%g v%g h-%g z" % (0, 0, w, self.height, w)
-        self.bg.props.width = width
+        #handles_width = self.start_handle.props.width
+        #min_width = handles_width * 2
+        #if width < min_width:
+        #    width = min_width
+        w = width  # - handles_width
+        #self.name.props.clip_path = "M%g,%g h%g v%g h-%g z" % (0, 0, w, self.height, w)
+        self.props.width = width
 
-        self._selec_indic.props.width = width
-        self.end_handle.props.x = w
+        #self._selec_indic.props.width = width
+        #self.end_handle.props.x = w
 
-        if self.expanded:
-            if w - NAME_HOFFSET > 0:
-                self.namebg.props.height = self.nameheight + NAME_PADDING2X
-                self.namebg.props.width = min(w - NAME_HOFFSET,
-                    self.namewidth + NAME_PADDING2X)
-                self.namebg.props.visibility = GooCanvas.CanvasItemVisibility.VISIBLE
-            else:
-                self.namebg.props.visibility = GooCanvas.CanvasItemVisibility.INVISIBLE
+#        if self.expanded:
+#            if w - NAME_HOFFSET > 0:
+#                self.namebg.props.height = self.nameheight + NAME_PADDING2X
+#                self.namebg.props.width = min(w - NAME_HOFFSET,
+#                    self.namewidth + NAME_PADDING2X)
+#                self.namebg.props.visibility = goocanvas.ITEM_VISIBLE
+#            else:
+#                self.namebg.props.visibility = goocanvas.ITEM_INVISIBLE
 
         self.app.gui.timeline_ui._canvas.regroupTracks()
         self.app.gui.timeline_ui.unsureVadjHeight()
@@ -710,7 +721,7 @@ class TrackTransition(TrackObject):
             self.name.props.text = element.props.transition_type.value_nick
 
     def _getColor(self):
-        # Transitions are bright blue, independent of the user color settings
+        #FIXME it's ugly :) Transitions are bright blue, independent of the user color settings
         return 0x0089CFF0
 
     def _changeVideoTransitionCb(self, transition, unused_transition_type):
@@ -751,12 +762,12 @@ class TrackFileSource(TrackObject):
     """
     def __init__(self, instance, element, track, timeline, utrack):
         TrackObject.__init__(self, instance, element, track, timeline, utrack)
-        self.preview = Preview(self.app, element, self.height)
-        object_thingies = (self.bg, self.preview, self._selec_indic,
-                        self.start_handle, self.end_handle,
-                        self.namebg, self.name)
-        for thing in object_thingies:
-            self.add_child(thing, -1)
+        #self.preview = Preview(self.app, element, self.height)
+        #object_thingies = (self.bg, self.preview, self._selec_indic,
+        #                self.start_handle, self.end_handle,
+        #                self.namebg, self.name)
+        #for thing in object_thingies:
+        #    self.add_child(thing, -1)
 
     def _setElement(self, element):
         """
@@ -765,27 +776,27 @@ class TrackFileSource(TrackObject):
         if self.element:
             uri = self.element.props.uri
             info = self.app.current.medialibrary.getInfoFromUri(uri)
-            self.name.props.text = info_name(info)
-            twidth, theight = text_size(self.name)
-            self.namewidth = twidth
-            self.nameheight = theight
+            #self.name.props.text = info_name(info)
+            #twidth, theight = text_size(self.name)
+            #self.namewidth = twidth
+            #self.nameheight = theight
             self._update()
 
     def _getColor(self):
-        if self.element.get_track().get_property("track-type") == GES.TrackType.AUDIO:
-            return self.settings.audioClipBg
+        if self.element.get_track().get_property("track-type") == ges.TrackType.AUDIO:
+            return Clutter.Color.new(50, 80, 120, 255)
         else:
-            return self.settings.videoClipBg
+            return Clutter.Color.new(120, 80, 50, 255)
 
 
-class Track(GooCanvas.CanvasGroup, Zoomable, Loggable):
+class Track(Clutter.Actor, Zoomable, Loggable):
     """
     Groups all TrackObjects of one Track
     """
     __gtype_name__ = 'Track'
 
     def __init__(self, instance, track, timeline=None):
-        GooCanvas.CanvasGroup.__init__(self)
+        Clutter.Actor.__init__(self)
         Zoomable.__init__(self)
         Loggable.__init__(self)
         self.app = instance
@@ -845,7 +856,7 @@ class Track(GooCanvas.CanvasGroup, Zoomable, Loggable):
         elif isinstance(track_object, GES.TrackFileSource):
             w = TrackFileSource(self.app, track_object, self.track, self.timeline, self)
             self.widgets[track_object] = w
-            self.add_child(w, -1)
+            self.add_child(w)
 
     def _objectRemovedCb(self, unused_timeline, track_object):
         if not isinstance(track_object, GES.TrackEffect) and track_object in self.widgets:
