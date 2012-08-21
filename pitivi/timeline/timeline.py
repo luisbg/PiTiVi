@@ -171,8 +171,6 @@ ui = '''
 
 
 class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
-    __gtype_name__ = 'ClutterTimeline'
-
     def __init__(self, instance, timeline=None):
         super(ClutterTimeline, self).__init__()
         Zoomable.__init__(self)
@@ -190,6 +188,14 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
         self.connect("draw", self.drawCb)
 
         self.app = instance
+        self._playhead = Clutter.Rectangle()
+        self._playhead.props.height = 0
+        self._playhead.props.width = 2
+        self._playhead.set_position(0, 0)
+        self._playhead.set_color(Clutter.Color.new(200, 0, 0, 255))
+
+        self.stage.add_child(self._playhead)
+
         #self.stage.connect('key-press-event', self.key_press) # This Works!
         #texture = Clutter.Texture.new_from_file("/home/mathieu/Pictures/1344547891223.jpg")
         #texture.set_position(0, 0)
@@ -426,7 +432,7 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
     def _trackAddedCb(self, timeline, track):
         track = Track(self.app, track, self._timeline)
         self._tracks.append(track)
-        self.stage.add_child(track)
+        self.stage.insert_child_below(track, self._playhead)
         self.regroupTracks()
 
     def _trackRemovedCb(self, unused_timeline, position):
@@ -442,12 +448,19 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
         This method should be called each time a change happen in the timeline
         """
         height = 0
+
         for i, track in enumerate(self._tracks):
-            #track.set_position(0, height)
-            #track.set_scale(1, 1)
-             #track.set_simple_transform(0, height, 1, 0)
+            track.set_position(0, height)
+            track.set_scale(1, 1)
             height += track.height
+
         self.height = height
+        for track in self._tracks:
+            if len(track.getTrack().get_objects()):
+                self.height += CANVAS_SPACING / 2
+        if (self._playhead.props.height != self.height):
+            self._playhead.animatev(Clutter.AnimationMode.EASE_OUT_BOUNCE,
+                   2000, ["height"], [self.height])
         #self._request_size()
 
     def updateTracks(self):
