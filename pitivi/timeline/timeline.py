@@ -933,6 +933,7 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
         self._createUI()
         self._framerate = Gst.Fraction(1, 1)
         self._timeline = None
+        self._firstObject = True
 
         # Used to insert sources at the end of the timeline
         self._sources_to_insert = []
@@ -1891,7 +1892,9 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
 
     def _finalizeSourceAdded(self):
         timeline = self.app.current.timeline
-        self.app.current.seeker.seek(timeline.props.duration)
+        if self._firstObject:
+            self.app.current.seeker.seek(long(1))
+            self._firstObject = False
         if self.zoomed_fitted is True:
             self._setBestZoomRatio()
         return False
