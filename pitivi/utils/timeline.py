@@ -466,7 +466,7 @@ class View(object):
 
     def __init__(self, instance, default_mode=GES.EditMode.EDIT_NORMAL):
         object.__init__(self)
-        self._controller = self.Controller(instance, default_mode, view=self)
+        self._controller = self.Controller(instance, view=self)
 
 ## public interface
 

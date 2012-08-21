@@ -245,8 +245,7 @@ class TrackObjectController(Controller):
             self._context.setMode(self._getMode())
 
 
-class TrimHandle(View, GooCanvas.CanvasImage, Loggable, Zoomable):
-
+class TrimHandle(View, Clutter.Actor, Loggable, Zoomable):
     """A component of a TrackObject which manage's the source's edit
     points"""
 
@@ -256,14 +255,12 @@ class TrimHandle(View, GooCanvas.CanvasImage, Loggable, Zoomable):
         self.timeline = timeline
         self.movable = True
         self.current_pixbuf = TRIMBAR_PIXBUF
-        GooCanvas.CanvasImage.__init__(self,
-            pixbuf=self.current_pixbuf,
-            line_width=0,
-            pointer_events=GooCanvas.CanvasPointerEvents.FILL,
-            **kwargs)
-        View.__init__(self, instance, GES.EditMode.EDIT_TRIM)
+        Clutter.Actor.__init__(self)
+        #View.__init__(self, instance, ges.EDIT_MODE_TRIM)
         Zoomable.__init__(self)
         Loggable.__init__(self)
+        self.texture = Clutter.Texture.new_from_file(os.path.join(configure.get_pixmap_dir(), "trimbar-normal.png"))
+        self.add_child(self.texture)
 
     def focus(self):
         self.current_pixbuf = TRIMBAR_PIXBUF_FOCUS
@@ -278,7 +275,7 @@ class TrimHandle(View, GooCanvas.CanvasImage, Loggable, Zoomable):
     def setHeight(self, height):
         self._height = height
         self.props.height = height
-        self._scalePixbuf()
+        self.texture.set_size(-1, height)
 
     def getHeight(self):
         return self._height
@@ -296,66 +293,66 @@ class StartHandle(TrimHandle):
 
     """Subclass of TrimHandle wich sets the object's start time"""
 
-    class Controller(TrackObjectController):
-
-        _cursor = LEFT_SIDE
-
-        def drag_start(self, item, target, event):
-            self.debug("Trim start %s" % target)
-            TrackObjectController.drag_start(self, item, target, event)
-
-            if self._view.element.is_locked():
-                elem = self._view.element.get_timeline_object()
-            else:
-                elem = self._view.element
-
-            self._context = EditingContext(elem, self._view.timeline,
-                GES.EditMode.EDIT_TRIM, GES.Edge.EDGE_START, set([]),
-                self.app.settings)
-            self._context.connect("clip-trim", self.clipTrimCb)
-            self._context.connect("clip-trim-finished", self.clipTrimFinishedCb)
-
-            self._view.app.action_log.begin("trim object")
-
-        def clipTrimCb(self, unused_TrimStartContext, tl_obj, position):
-            # While a clip is being trimmed, ask the viewer to preview it
-            self._view.app.gui.viewer.clipTrimPreview(tl_obj, position)
-
-        def clipTrimFinishedCb(self, unused_TrimStartContext):
-            # When a clip has finished trimming, tell the viewer to reset itself
-            self._view.app.gui.viewer.clipTrimPreviewFinished()
+#    class Controller(TrackObjectController):
+#
+#        _cursor = LEFT_SIDE
+#
+#        def drag_start(self, item, target, event):
+#            self.debug("Trim start %s" % target)
+#            TrackObjectController.drag_start(self, item, target, event)
+#
+#            if self._view.element.is_locked():
+#                elem = self._view.element.get_timeline_object()
+#            else:
+#                elem = self._view.element
+#
+#            self._context = EditingContext(elem, self._view.timeline,
+#                ges.EDIT_MODE_TRIM, ges.EDGE_START, set([]),
+#                self.app.settings)
+#            self._context.connect("clip-trim", self.clipTrimCb)
+#            self._context.connect("clip-trim-finished", self.clipTrimFinishedCb)
+#
+#            self._view.app.action_log.begin("trim object")
+#
+#        def clipTrimCb(self, unused_TrimStartContext, tl_obj, position):
+#            # While a clip is being trimmed, ask the viewer to preview it
+#            self._view.app.gui.viewer.clipTrimPreview(tl_obj, position)
+#
+#        def clipTrimFinishedCb(self, unused_TrimStartContext):
+#            # When a clip has finished trimming, tell the viewer to reset itself
+#            self._view.app.gui.viewer.clipTrimPreviewFinished()
 
 
 class EndHandle(TrimHandle):
 
     """Subclass of TrimHandle which sets the objects's end time"""
 
-    class Controller(TrackObjectController):
-
-        _cursor = RIGHT_SIDE
-
-        def drag_start(self, item, target, event):
-            self.debug("Trim end %s" % target)
-            TrackObjectController.drag_start(self, item, target, event)
-
-            if self._view.element.is_locked():
-                elem = self._view.element.get_timeline_object()
-            else:
-                elem = self._view.element
-            self._context = EditingContext(elem, self._view.timeline,
-                GES.EditMode.EDIT_TRIM, GES.Edge.EDGE_END, set([]),
-                self.app.settings)
-            self._context.connect("clip-trim", self.clipTrimCb)
-            self._context.connect("clip-trim-finished", self.clipTrimFinishedCb)
-            self._view.app.action_log.begin("trim object")
-
-        def clipTrimCb(self, unused_TrimStartContext, tl_obj, position):
-            # While a clip is being trimmed, ask the viewer to preview it
-            self._view.app.gui.viewer.clipTrimPreview(tl_obj, position)
-
-        def clipTrimFinishedCb(self, unused_TrimStartContext):
-            # When a clip has finished trimming, tell the viewer to reset itself
-            self._view.app.gui.viewer.clipTrimPreviewFinished()
+#    class Controller(TrackObjectController):
+#
+#        _cursor = RIGHT_SIDE
+#
+#        def drag_start(self, item, target, event):
+#            self.debug("Trim end %s" % target)
+#            TrackObjectController.drag_start(self, item, target, event)
+#
+#            if self._view.element.is_locked():
+#                elem = self._view.element.get_timeline_object()
+#            else:
+#                elem = self._view.element
+#            self._context = EditingContext(elem, self._view.timeline,
+#                GES.EditMode.EDIT_TRIM, GES.Edge.EDGE_END, set([]),
+#                self.app.settings)
+#            self._context.connect("clip-trim", self.clipTrimCb)
+#            self._context.connect("clip-trim-finished", self.clipTrimFinishedCb)
+#            self._view.app.action_log.begin("trim object")
+#
+#        def clipTrimCb(self, unused_TrimStartContext, tl_obj, position):
+#            # While a clip is being trimmed, ask the viewer to preview it
+#            self._view.app.gui.viewer.clipTrimPreview(tl_obj, position)
+#
+#        def clipTrimFinishedCb(self, unused_TrimStartContext):
+#            # When a clip has finished trimming, tell the viewer to reset itself
+#            self._view.app.gui.viewer.clipTrimPreviewFinished()
 
 
 #FIXME PyGI Missing anotation in GooItem(bug 677013), reimplement
@@ -379,7 +376,7 @@ def raise_new(self, above):
 setattr(GooCanvas.CanvasItem, "raise_", raise_new)
 
 
-class TrackObject(View, Clutter.Rectangle, Zoomable, Loggable):
+class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
 
     class Controller(TrackObjectController):
 
@@ -421,8 +418,8 @@ class TrackObject(View, Clutter.Rectangle, Zoomable, Loggable):
                 timeline.selection.setToObj(element, SELECT)
 
     def __init__(self, instance, element, track, timeline, utrack):
-        Clutter.Rectangle.__init__(self)
 
+        Clutter.Actor.__init__(self)
         self.set_reactive(True)
 
         #HUGE FIXME ^^
@@ -432,6 +429,9 @@ class TrackObject(View, Clutter.Rectangle, Zoomable, Loggable):
             pass
         Zoomable.__init__(self)
         Loggable.__init__(self)
+        self.rectangle = Clutter.Rectangle()
+        self.add_child(self.rectangle)
+        self.rectangle.set_position(0, 0)
         self.ref = Zoomable.nsToPixel(10000000000)
         self.app = instance
         self.track = track
@@ -457,8 +457,8 @@ class TrackObject(View, Clutter.Rectangle, Zoomable, Loggable):
 #            y=NAME_VOFFSET,
 #            line_width=0)
 #
-#        self.start_handle = StartHandle(self.app, element, timeline, height=self.height)
-#        self.end_handle = EndHandle(self.app, element, timeline, height=self.height)
+        self.start_handle = StartHandle(self.app, element, timeline, height=self.height)
+        self.end_handle = EndHandle(self.app, element, timeline, height=self.height)
 #
 #        self._selec_indic = goocanvas.Rect(
 #            visibility=goocanvas.ITEM_INVISIBLE,
@@ -479,8 +479,9 @@ class TrackObject(View, Clutter.Rectangle, Zoomable, Loggable):
     def setHeight(self, height):
         self._height = height
         self.props.height = height
-        #self.start_handle.height = height
-        #self.end_handle.height = height
+        self.rectangle.props.height = height
+        self.start_handle.height = height
+        self.end_handle.height = height
         #self._selec_indic.props.height = height
         #if hasattr(self, "preview"):
         #    self.preview.height = height
@@ -567,7 +568,7 @@ class TrackObject(View, Clutter.Rectangle, Zoomable, Loggable):
 
     def _clipAppearanceSettingsChangedCb(self, *args):
         color = self._getColor()
-        self.set_color(color)
+        self.rectangle.set_color(color)
         #self.namebg.props.fill_color_rgba = color
         #self._selec_indic.props.fill_color_rgba = self.settings.selectedColor
         #self.name.props.font = self.settings.clipFontDesc
@@ -680,16 +681,17 @@ class TrackObject(View, Clutter.Rectangle, Zoomable, Loggable):
         width = self.nsToPixel(self.element.get_duration())
 
         # Handle a duration of 0
-        #handles_width = self.start_handle.props.width
-        #min_width = handles_width * 2
-        #if width < min_width:
-        #    width = min_width
-        w = width  # - handles_width
+        handles_width = self.start_handle.props.width
+        min_width = handles_width * 2
+        if width < min_width:
+            width = min_width
+        w = width - handles_width
         #self.name.props.clip_path = "M%g,%g h%g v%g h-%g z" % (0, 0, w, self.height, w)
         self.props.width = width
+        self.rectangle.props.width = width
 
         #self._selec_indic.props.width = width
-        #self.end_handle.props.x = w
+        self.end_handle.props.x = w
 
 #        if self.expanded:
 #            if w - NAME_HOFFSET > 0:
@@ -762,6 +764,10 @@ class TrackFileSource(TrackObject):
     """
     def __init__(self, instance, element, track, timeline, utrack):
         TrackObject.__init__(self, instance, element, track, timeline, utrack)
+        for thing in (self.start_handle, self.end_handle):
+            self.add_child(thing)
+        #self.start_handle.props.height = 25
+        #self.start_handle.props.width = 4
         #self.preview = Preview(self.app, element, self.height)
         #object_thingies = (self.bg, self.preview, self._selec_indic,
         #                self.start_handle, self.end_handle,
