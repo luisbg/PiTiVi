@@ -454,11 +454,9 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
         self.start_handle = StartHandle(self.app, element, timeline, height=self.height)
         self.end_handle = EndHandle(self.app, element, timeline, height=self.height)
 #
-#        self._selec_indic = goocanvas.Rect(
-#            visibility=goocanvas.ITEM_INVISIBLE,
-#            line_width=0.0,
-#            height=self.height)
-#
+        self._selec_indic = Clutter.Rectangle()
+        self._selec_indic.props.height = self.height
+
         self.element = element
         element.selected = Selected()
         element.selected.connect("selected-changed", self.selectedChangedCb)
@@ -476,7 +474,7 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
         self.rectangle.props.height = height
         self.start_handle.height = height
         self.end_handle.height = height
-        #self._selec_indic.props.height = height
+        self._selec_indic.props.height = height
         #if hasattr(self, "preview"):
         #    self.preview.height = height
         self._update()
@@ -567,7 +565,7 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
         color = self._getColor()
         self.rectangle.set_color(color)
         #self.namebg.props.fill_color_rgba = color
-        #self._selec_indic.props.fill_color_rgba = self.settings.selectedColor
+        self._selec_indic.set_color(Clutter.Color.new(50, 50, 50, 100))
         #self.name.props.font = self.settings.clipFontDesc
         #self.name.props.fill_color_rgba = self.settings.clipFontColor
         #width, theight = text_size(self.name)
@@ -644,10 +642,9 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
                     self.app.gui.title_editor.set_source(title)
                 self.app.gui.trans_list.deactivate()
                 self.app.gui.switchContextTab()
-            self._selec_indic.props.visibility = GooCanvas.CanvasItemVisibility.VISIBLE
+            self._selec_indic.props.visible = True
         else:
-            self.app.gui.title_editor.set_source(None)
-            self._selec_indic.props.visibility = GooCanvas.CanvasItemVisibility.INVISIBLE
+            self._selec_indic.props.visible = False
 
     def _update(self):
         # Calculating the new position
@@ -687,7 +684,7 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
         self.props.width = width
         self.rectangle.props.width = width
 
-        #self._selec_indic.props.width = width
+        self._selec_indic.props.width = width
         self.end_handle.props.x = w
 
 #        if self.expanded:
@@ -761,9 +758,10 @@ class TrackFileSource(TrackObject):
     """
     def __init__(self, instance, element, track, timeline, utrack):
         TrackObject.__init__(self, instance, element, track, timeline, utrack)
-        for thing in (self.start_handle, self.end_handle):
+        for thing in (self.start_handle, self.end_handle, self._selec_indic):
             self.add_child(thing)
 
+        self._selec_indic.props.visible = False
         #self.start_handle.props.height = 25
         #self.start_handle.props.width = 4
         #self.preview = Preview(self.app, element, self.height)
