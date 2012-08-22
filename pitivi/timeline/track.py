@@ -174,13 +174,12 @@ class TrackObjectController(Controller):
     next_previous_x = None
     ref = None
 
-    def __init__(self, instance, default_mode, view=None):
+    def __init__(self, instance, view):
         # Used to force the editing mode in use
         Controller.__init__(self, instance, view)
+        self.default_mode = ges.EDIT_MODE_NORMAL
 
-        self.default_mode = default_mode
-
-    def enter(self, unused, unused2):
+    def enter(self, unused):
         self._view.focus()
 
     def leave(self, unused, unused2):
@@ -422,13 +421,10 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
         Clutter.Actor.__init__(self)
         self.set_reactive(True)
 
-        #HUGE FIXME ^^
-        try:
-            View.__init__(self, instance)
-        except:
-            pass
+        View.__init__(self, instance)
         Zoomable.__init__(self)
         Loggable.__init__(self)
+
         self.rectangle = Clutter.Rectangle()
         self.add_child(self.rectangle)
         self.rectangle.set_position(0, 0)
@@ -470,7 +466,7 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
         element.selected.connect("selected-changed", self.selectedChangedCb)
 
         self.settings = instance.settings
-#        self.unfocus()
+        self.unfocus()
 
 ## Properties
 
@@ -491,6 +487,9 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
         return self._height
 
     height = property(getHeight, setHeight)
+
+    def get_canvas(self):
+        return self.app.gui.timeline_ui._canvas
 
     _expanded = True
 
@@ -516,8 +515,8 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
 ## Public API
 
     def focus(self):
-        self.start_handle.props.visibility = GooCanvas.CanvasItemVisibility.VISIBLE
-        self.end_handle.props.visibility = GooCanvas.CanvasItemVisibility.VISIBLE
+        self.start_handle.props.visible = True
+        self.end_handle.props.visible = True
         self.raise_(None)
         for transition in self.utrack.transitions:
             # This is required to ensure that transitions always show on top
@@ -525,8 +524,8 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
             transition.raise_(None)
 
     def unfocus(self):
-        self.start_handle.props.visibility = GooCanvas.CanvasItemVisibility.INVISIBLE
-        self.end_handle.props.visibility = GooCanvas.CanvasItemVisibility.INVISIBLE
+        self.start_handle.props.visible = False
+        self.end_handle.props.visible = False
 
     def zoomChanged(self):
         self._update()
@@ -766,6 +765,7 @@ class TrackFileSource(TrackObject):
         TrackObject.__init__(self, instance, element, track, timeline, utrack)
         for thing in (self.start_handle, self.end_handle):
             self.add_child(thing)
+
         #self.start_handle.props.height = 25
         #self.start_handle.props.width = 4
         #self.preview = Preview(self.app, element, self.height)

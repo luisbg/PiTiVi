@@ -1419,13 +1419,10 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
         return True
 
     def scroll_left(self):
-        print "got scroll event"
         self._hscrollbar.set_value(self._hscrollbar.get_value() -
             self.hadj.props.page_size ** (2.0 / 3.0))
-        print self._hscrollbar.get_value() - self.hadj.props.page_size ** (2.0 / 3.0)
 
     def scroll_right(self):
-        print "got scroll event too"
         self._hscrollbar.set_value(self._hscrollbar.get_value() +
             self.hadj.props.page_size ** (2.0 / 3.0))
 

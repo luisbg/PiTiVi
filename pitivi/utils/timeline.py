@@ -24,6 +24,8 @@ from gi.repository import GES
 from gi.repository import Gdk
 from gi.repository import Gst
 
+from gi.repository import Clutter
+
 from pitivi.utils.loggable import Loggable
 from pitivi.utils.signal import Signallable
 from pitivi.utils.receiver import receiver, handler
@@ -285,7 +287,7 @@ class Controller(Loggable):
     _handle_mouse_up_down = True
     _handle_motion_notify = True
 
-    def __init__(self, instance, view=None):
+    def __init__(self, instance, view):
         object.__init__(self)
         self._view = view
         self.app = instance
@@ -310,41 +312,41 @@ class Controller(Loggable):
 
 ## signal handlers
 
-    @handler(_view, "enter_notify_event")
-    def enter_notify_event(self, item, target, event):
-        self._event_common(item, target, event)
-        self._canvas.grab_focus(item)
-        if self._cursor and item is target:
-            event.window.set_cursor(self._cursor)
+    @handler(_view, "enter-event")
+    def enter_notify_event(self, item, event):
+        self._event_common(item, event)
+        Clutter.grab_keyboard(item)
+        if self._cursor:
+            self.app.gui.get_window().set_cursor(self._cursor)
         if not self._dragging:
-            self.enter(item, target)
+            self.enter(item)
         self._ptr_within = True
         return self._handle_enter_leave or self._dragging
 
-    @handler(_view, "leave_notify_event")
-    def leave_notify_event(self, item, target, event):
-        self._event_common(item, target, event)
-        self._canvas.keyboard_ungrab(item, event.time)
+    @handler(_view, "leave-event")
+    def leave_notify_event(self, item, event):
+        self._event_common(item, event)
+        Clutter.ungrab_keyboard()
         self._ptr_within = False
         if not self._dragging:
-            self.leave(item, target)
-            event.window.set_cursor(ARROW)
+            self.leave(item, event)
+            self.app.gui.get_window().set_cursor(ARROW)
         return self._handle_enter_leave or self._dragging
 
-    @handler(_view, "button_press_event")
-    def button_press_event(self, item, target, event):
-        self._event_common(item, target, event)
+    @handler(_view, "button-press-event")
+    def button_press_event(self, item, event):
+        self._event_common(item, event)
         if not self._canvas:
             self._canvas = item.get_canvas()
         self._mousedown = self.pos(item) - self.transform(self.from_item_event(item, event))
-        self._dragging = target
-        self._initial = self.pos(target)
-        self._pending_drag_start = (item, target, event)
+        self._dragging = item
+        self._initial = self.pos(item)
+        self._pending_drag_start = (item, event)
         return self._handle_mouse_up_down
 
-    @handler(_view, "motion_notify_event")
-    def motion_notify_event(self, item, target, event):
-        self._event_common(item, target, event)
+    @handler(_view, "motion-event")
+    def motion_notify_event(self, item, event):
+        self._event_common(item, event)
         if self._dragging:
             if self._pending_drag_start is not None:
                 pending_drag_start, self._pending_drag_start = self._pending_drag_start, None
@@ -355,19 +357,19 @@ class Controller(Loggable):
                 self.transform(self._mousedown + self.from_item_event(item, event)))
             return self._handle_motion_notify
         else:
-            self.hover(item, target, event)
+            self.hover(item, event)
         return False
 
-    @handler(_view, "button_release_event")
-    def button_release_event(self, item, target, event):
-        self._event_common(item, target, event)
+    @handler(_view, "button-release-event")
+    def button_release_event(self, item, event):
+        self._event_common(item, event)
         self._drag_end(item, self._dragging, event)
         self._dragging = None
         return self._handle_mouse_up_down
 
-    @handler(_view, "key_press_event")
-    def key_press_event(self, item, target, event):
-        self._event_common(item, target, event)
+    @handler(_view, "key-press-event")
+    def key_press_event(self, item, event):
+        self._event_common(item, event)
         kv = event.keyval
         if kv in (Gdk.KEY_Shift_L, Gdk.KEY_Shift_R):
             self._shift_down = True
@@ -375,9 +377,9 @@ class Controller(Loggable):
             self._control_down = True
         return self.key_press(kv)
 
-    @handler(_view, "key_release_event")
-    def key_release_event(self, item, target, event):
-        self._event_common(item, target, event)
+    @handler(_view, "key-release-event")
+    def key_release_event(self, item, event):
+        self._event_common(item, event)
         kv = event.keyval
         if kv in (Gdk.KEY_Shift_L, Gdk.KEY_Shift_R):
             self._shift_down = False
@@ -387,16 +389,19 @@ class Controller(Loggable):
 
 ## internal callbacks
 
-    def _event_common(self, item, target, event):
+    def _event_common(self, item, event):
         if not self._canvas:
             self._canvas = item.get_canvas()
             # might there be a better way to do this?
             self._hadj = self._canvas.app.gui.timeline_ui.hadj
             self._vadj = self._canvas.app.gui.timeline_ui.vadj
         self._last_event = event
-        _, s = event.get_state()
-        self._shift_down = s & Gdk.ModifierType.SHIFT_MASK
-        self._control_down = s & Gdk.ModifierType.CONTROL_MASK
+        try:
+            s = event.modifier_state
+            self._shift_down = s & Clutter.ModifierType.SHIFT_MASK
+            self._control_down = s & Clutter.ModifierType.CONTROL_MASK
+        except AttributeError:
+            pass
 
     def _drag_start(self, item, target, event):
         self.drag_start(item, target, event)
@@ -444,10 +449,10 @@ class Controller(Loggable):
     def transform(self, pos):
         return pos
 
-    def enter(self, item, target):
+    def enter(self, item):
         pass
 
-    def leave(self, item, target):
+    def leave(self, item, event):
         pass
 
     def key_press(self, keyval):
@@ -456,7 +461,7 @@ class Controller(Loggable):
     def key_release(self, keyval):
         pass
 
-    def hover(self, item, target, event):
+    def hover(self, item, event):
         pass
 
 
@@ -466,7 +471,7 @@ class View(object):
 
     def __init__(self, instance, default_mode=GES.EditMode.EDIT_NORMAL):
         object.__init__(self)
-        self._controller = self.Controller(instance, view=self)
+        self._controller = self.Controller(instance, self)
 
 ## public interface
 
