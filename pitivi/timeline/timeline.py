@@ -195,6 +195,7 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
         self._playhead.set_color(Clutter.Color.new(200, 0, 0, 255))
 
         self.stage.add_child(self._playhead)
+        self.stage.set_color(Clutter.Color.new(50, 50, 50, 255))
 
         #self.stage.connect('key-press-event', self.key_press) # This Works!
         #texture = Clutter.Texture.new_from_file("/home/mathieu/Pictures/1344547891223.jpg")
