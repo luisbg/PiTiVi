@@ -960,6 +960,7 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
         self.props.column_spacing = 2
         self.hadj = Gtk.Adjustment()
         self.vadj = Gtk.Adjustment()
+        self.xoffset = 0
 
         # zooming slider's "zoom fit" button
         zoom_controls_hbox = Gtk.HBox()
@@ -1441,8 +1442,12 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
         #    0 - self.vadj.get_value(), 1.0, 0)
 
     def _updateScrollPosition(self, adjustment):
-        print "lol"
         self.unsureVadjHeight()
+        diff = adjustment.get_value() - self.xoffset
+        for child in self._canvas.stage.get_children():
+            x, y = child.get_position()
+            child.set_position(x - diff, y)
+        self.xoffset = adjustment.get_value()
 
     def _zoomAdjustmentChangedCb(self, adjustment):
         # GTK crack
