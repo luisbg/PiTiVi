@@ -451,7 +451,7 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
         height = 0
 
         for i, track in enumerate(self._tracks):
-            track.set_position(0, height)
+            track.set_position(track.props.x, height)
             track.set_scale(1, 1)
             height += track.height
 
