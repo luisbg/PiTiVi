@@ -292,6 +292,7 @@ class Controller(Loggable):
         self._view = view
         self.app = instance
         Loggable.__init__(self)
+        self.app.gui.timeline_ui._canvas.stage.connect("motion-event", self.motion_notify_event)
 
 ## convenience functions
 
@@ -300,15 +301,13 @@ class Controller(Loggable):
         return Point(*self._canvas.convert_from_pixels(event.x, event.y))
 
     def from_item_event(self, item, event):
-        return Point(*self._canvas.convert_from_item_space(item,
-            *self.from_event(event)))
+        return Point(event.x, event.y)
 
     def to_item_space(self, item, point):
         return Point(*self._canvas.convert_to_item_space(item, *point))
 
     def pos(self, item):
-        bounds = item.get_bounds()
-        return Point(bounds.x1, bounds.y1)
+        return Point(item.props.x, item.props.y)
 
 ## signal handlers
 
@@ -338,13 +337,13 @@ class Controller(Loggable):
         self._event_common(item, event)
         if not self._canvas:
             self._canvas = item.get_canvas()
-        self._mousedown = self.pos(item) - self.transform(self.from_item_event(item, event))
+        self._mousedown = self.pos(item) - self.from_item_event(item, event)
         self._dragging = item
         self._initial = self.pos(item)
         self._pending_drag_start = (item, event)
         return self._handle_mouse_up_down
 
-    @handler(_view, "motion-event")
+    #@handler(_view, "motion-event")
     def motion_notify_event(self, item, event):
         self._event_common(item, event)
         if self._dragging:
@@ -391,10 +390,14 @@ class Controller(Loggable):
 
     def _event_common(self, item, event):
         if not self._canvas:
-            self._canvas = item.get_canvas()
-            # might there be a better way to do this?
-            self._hadj = self._canvas.app.gui.timeline_ui.hadj
-            self._vadj = self._canvas.app.gui.timeline_ui.vadj
+            try:
+                self._canvas = item.get_canvas()
+                # might there be a better way to do this?
+                self._hadj = self._canvas.app.gui.timeline_ui.hadj
+                self._vadj = self._canvas.app.gui.timeline_ui.vadj
+            except AttributeError:
+                pass
+
         self._last_event = event
         try:
             s = event.modifier_state
@@ -403,8 +406,8 @@ class Controller(Loggable):
         except AttributeError:
             pass
 
-    def _drag_start(self, item, target, event):
-        self.drag_start(item, target, event)
+    def _drag_start(self, item, event):
+        self.drag_start(item, event)
 
     def _drag_end(self, item, target, event):
         self._pending_drag_start = None
@@ -419,9 +422,9 @@ class Controller(Loggable):
             else:
                 self.click(point)
             self._last_click = event.time
-            event.window.set_cursor(self._cursor)
+            self.app.gui.get_window().set_cursor(self._cursor)
         else:
-            event.window.set_cursor(ARROW)
+            self.app.gui.get_window().set_cursor(ARROW)
 
     def _drag_threshold(self):
         last = self.pos(self._dragging)
@@ -437,7 +440,7 @@ class Controller(Loggable):
     def double_click(self, pos):
         pass
 
-    def drag_start(self, item, target, event):
+    def drag_start(self, item, event):
         pass
 
     def drag_end(self, item, target, event):

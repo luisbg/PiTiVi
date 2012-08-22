@@ -185,7 +185,7 @@ class TrackObjectController(Controller):
     def leave(self, unused, unused2):
         self._view.unfocus()
 
-    def drag_start(self, item, target, event):
+    def drag_start(self, item, event):
         """
             Start draging an element in the Track
         """
@@ -199,10 +199,9 @@ class TrackObjectController(Controller):
             self.previous_x = self.previous_x * ratio
 
         self.ref = Zoomable.pixelToNs(10000000000)
-        tx = self._view.props.parent.get_simple_transform()
 
         # store y offset for later priority calculation
-        self._y_offset = tx[4]
+        self._y_offset = self._view.props.y
         # zero y component of mousdown coordiante
         self._mousedown = Point(self._mousedown[0], 0)
 
@@ -221,8 +220,7 @@ class TrackObjectController(Controller):
         x = x + self._hadj.get_value()
 
         position = Zoomable.pixelToNs(x)
-        priority = self.app.gui.timeline_ui.controls.getPriorityForY(
-            y - self._y_offset + self._vadj.get_value())
+        priority = self.app.gui.timeline_ui.controls.getPriorityForY(y + self._vadj.get_value())
 
         self._context.setMode(self._getMode())
         self.debug("Setting position")
@@ -381,11 +379,11 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
 
         _handle_enter_leave = True
 
-        def drag_start(self, item, target, event):
+        def drag_start(self, item, event):
             if not self._view.movable:
                 return
 
-            TrackObjectController.drag_start(self, item, target, event)
+            TrackObjectController.drag_start(self, item, event)
 
             self._context = EditingContext(self._view.element,
                 self._view.timeline, GES.EditMode.EDIT_NORMAL, GES.Edge.EDGE_NONE,
@@ -402,9 +400,9 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
         def click(self, pos):
             timeline = self._view.timeline
             element = self._view.element
-            if self._last_event.get_state()[1] & Gdk.ModifierType.SHIFT_MASK:
+            if self._last_event.modifier_state & Clutter.ModifierType.SHIFT_MASK:
                 timeline.selection.setToObj(element, SELECT_BETWEEN)
-            elif self._last_event.get_state()[1] & Gdk.ModifierType.CONTROL_MASK:
+            elif self._last_event.modifier_state & Clutter.ModifierType.CONTROL_MASK:
                 if element.selected:
                     mode = UNSELECT
                 else:
