@@ -292,7 +292,9 @@ class Controller(Loggable):
         self._view = view
         self.app = instance
         Loggable.__init__(self)
+
         self.app.gui.timeline_ui._canvas.stage.connect("motion-event", self.motion_notify_event)
+        self.app.gui.timeline_ui._canvas.connect("leave-notify-event", self.canvas_left_event)
 
 ## convenience functions
 
@@ -310,6 +312,9 @@ class Controller(Loggable):
         return Point(item.props.x, item.props.y)
 
 ## signal handlers
+
+    def canvas_left_event(self, item, event):
+        self._dragging = None
 
     @handler(_view, "enter-event")
     def enter_notify_event(self, item, event):
@@ -427,6 +432,8 @@ class Controller(Loggable):
             self.app.gui.get_window().set_cursor(ARROW)
 
     def _drag_threshold(self):
+        if not self._dragging:
+            return True
         last = self.pos(self._dragging)
         if abs(self._initial - last) > self.__DRAG_THRESHOLD__:
             return False
