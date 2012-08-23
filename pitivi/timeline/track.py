@@ -437,23 +437,12 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
         self._settings = None
         self.movable = True
 
-#        self.bg = goocanvas.Rect(height=self.height, line_width=1)
-#
-#        self.name = goocanvas.Text(
-#            x=NAME_HOFFSET + NAME_PADDING,
-#            y=NAME_VOFFSET + NAME_PADDING,
-#            operator=cairo.OPERATOR_ADD,
-#            alignment=pango.ALIGN_LEFT)
-#        self.namebg = goocanvas.Rect(
-#            radius_x=2,
-#            radius_y=2,
-#            x=NAME_HOFFSET,
-#            y=NAME_VOFFSET,
-#            line_width=0)
-#
+        self.name = Clutter.Text.new()
+        self.namebg = Clutter.Rectangle.new()
+
         self.start_handle = StartHandle(self.app, element, timeline, height=self.height)
         self.end_handle = EndHandle(self.app, element, timeline, height=self.height)
-#
+
         self._selec_indic = Clutter.Rectangle()
         self._selec_indic.props.height = self.height
 
@@ -564,13 +553,13 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
     def _clipAppearanceSettingsChangedCb(self, *args):
         color = self._getColor()
         self.rectangle.set_color(color)
-        #self.namebg.props.fill_color_rgba = color
+        self.namebg.set_color(Clutter.Color.new(200, 200, 200, 100))
         self._selec_indic.set_color(Clutter.Color.new(50, 50, 50, 100))
-        #self.name.props.font = self.settings.clipFontDesc
-        #self.name.props.fill_color_rgba = self.settings.clipFontColor
-        #width, theight = text_size(self.name)
-        #self.namewidth = twidth
-        #self.nameheight = theight
+        self.name.set_font_name(self.settings.clipFontDesc)
+
+        twidth, theight = self.name.get_size()
+        self.namewidth = twidth
+        self.nameheight = theight
         self._update()
 
 ## element signals
@@ -687,14 +676,14 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
         self._selec_indic.props.width = width
         self.end_handle.props.x = w
 
-#        if self.expanded:
-#            if w - NAME_HOFFSET > 0:
-#                self.namebg.props.height = self.nameheight + NAME_PADDING2X
-#                self.namebg.props.width = min(w - NAME_HOFFSET,
-#                    self.namewidth + NAME_PADDING2X)
-#                self.namebg.props.visibility = goocanvas.ITEM_VISIBLE
-#            else:
-#                self.namebg.props.visibility = goocanvas.ITEM_INVISIBLE
+        if self.expanded:
+            if w - NAME_HOFFSET > 0:
+                self.namebg.props.height = self.nameheight + NAME_PADDING2X
+                self.namebg.props.width = min(w - NAME_HOFFSET,
+                    self.namewidth + NAME_PADDING2X)
+                self.namebg.props.visible = True
+            else:
+                self.namebg.props.visible = False
 
         self.app.gui.timeline_ui._canvas.regroupTracks()
         self.app.gui.timeline_ui.unsureVadjHeight()
@@ -758,18 +747,12 @@ class TrackFileSource(TrackObject):
     """
     def __init__(self, instance, element, track, timeline, utrack):
         TrackObject.__init__(self, instance, element, track, timeline, utrack)
-        for thing in (self.start_handle, self.end_handle, self._selec_indic):
+        for thing in (self.start_handle, self.end_handle, self._selec_indic, self.namebg, self.name):
             self.add_child(thing)
+        self.namebg.set_position(15, 5)
+        self.name.set_position(16, 7)
 
         self._selec_indic.props.visible = False
-        #self.start_handle.props.height = 25
-        #self.start_handle.props.width = 4
-        #self.preview = Preview(self.app, element, self.height)
-        #object_thingies = (self.bg, self.preview, self._selec_indic,
-        #                self.start_handle, self.end_handle,
-        #                self.namebg, self.name)
-        #for thing in object_thingies:
-        #    self.add_child(thing, -1)
 
     def _setElement(self, element):
         """
@@ -778,10 +761,7 @@ class TrackFileSource(TrackObject):
         if self.element:
             uri = self.element.props.uri
             info = self.app.current.medialibrary.getInfoFromUri(uri)
-            #self.name.props.text = info_name(info)
-            #twidth, theight = text_size(self.name)
-            #self.namewidth = twidth
-            #self.nameheight = theight
+            self.name.set_text(info_name(info))
             self._update()
 
     def _getColor(self):
