@@ -177,7 +177,7 @@ class TrackObjectController(Controller):
     def __init__(self, instance, view):
         # Used to force the editing mode in use
         Controller.__init__(self, instance, view)
-        self.default_mode = ges.EDIT_MODE_NORMAL
+        self.default_mode = GES.EditMode.EDIT_NORMAL
 
     def enter(self, unused):
         self._view.focus()
@@ -765,7 +765,7 @@ class TrackFileSource(TrackObject):
             self._update()
 
     def _getColor(self):
-        if self.element.get_track().get_property("track-type") == ges.TrackType.AUDIO:
+        if self.element.get_track().get_property("track-type") == GES.TrackType.AUDIO:
             return Clutter.Color.new(50, 80, 120, 255)
         else:
             return Clutter.Color.new(120, 80, 50, 255)
