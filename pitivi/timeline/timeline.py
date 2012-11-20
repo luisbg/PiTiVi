@@ -195,7 +195,14 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
         self._playhead.set_position(0, 0)
         self._playhead.set_color(Clutter.Color.new(200, 0, 0, 255))
 
+        self._snap_indicator = Clutter.Rectangle()
+        self._snap_indicator.props.height = 0
+        self._snap_indicator.props.width = 2
+        self._snap_indicator.set_position(0, 0)
+        self._snap_indicator.set_color(Clutter.Color.new(133, 192, 230, 255))
+
         self.stage.add_child(self._playhead)
+        self.stage.add_child(self._snap_indicator)
         self.stage.set_color(Clutter.Color.new(50, 50, 50, 255))
 
         #self.stage.connect('key-press-event', self.key_press) # This Works!
@@ -369,6 +376,7 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
         self.queue_draw()
 
 ## snapping indicator
+
     def _snapCb(self, unused_timeline, obj1, obj2, position):
         """
         Display or hide a snapping indicator line
