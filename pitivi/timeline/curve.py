@@ -22,11 +22,11 @@
 """
 Custom canvas item for track object keyframe curves."""
 
+from gi.repository import Gdk
 from gi.repository import GooCanvas
 from gi.repository import GObject
 from gi.repository import Gtk
 
-from pitivi.utils.receiver import receiver, handler
 from pitivi.utils.timeline import View, Controller, Zoomable
 from pitivi.utils.ui import LAYER_HEIGHT_EXPANDED, roundedrec, Point
 from pitivi.utils.misc import between
@@ -51,7 +51,6 @@ KW_LABEL_VPAD = 4
 KW_LABEL_HPAD2 = KW_LABEL_VPAD / 2
 KW_LABEL_VPAD2 = KW_LABEL_VPAD / 2
 CURVE_STROKE_WIDTH = 2.0
-HAND = Gdk.Cursor.new(Gdk.HAND2)
 
 
 class Curve(GooCanvas.CanvasItemSimple, GooCanvas.CanvasItem, View, Zoomable):
@@ -60,7 +59,7 @@ class Curve(GooCanvas.CanvasItemSimple, GooCanvas.CanvasItem, View, Zoomable):
 
     class Controller(Controller):
 
-        _cursor = HAND
+        _cursor = Gdk.Cursor.new(Gdk.HAND2)
         _kf = None
         _handle_enter_leave = False
 
@@ -138,9 +137,14 @@ class Curve(GooCanvas.CanvasItemSimple, GooCanvas.CanvasItem, View, Zoomable):
         self.keyframes = {}
         self.height = float(height)
         self.element = element
+        self.element.connect("in-point-changed", self._media_props_changed)
+        self.element.connect("media-duration-changed", self._media_props_changed)
         # FIXME PyGI port
         #self.props.pointer_events = GooCanvas.EVENTS_STROKE
         self.interpolator = interpolator
+        self.interpolator.connect("keyframe-removed", self.keyframeRemovedCb)
+        self.interpolator.connect("keyframe-added", self.keyframeAddedCb)
+        self.interpolator.connect("keyframe-moved", self.keyframeMovedCb)
         self._focused_kf = None
         self.normal()
         self.set_simple_transform(0, -KW_LABEL_Y_OVERFLOW, 1.0, 0)
@@ -160,31 +164,22 @@ class Curve(GooCanvas.CanvasItemSimple, GooCanvas.CanvasItem, View, Zoomable):
 
 ## element callbacks
 
-    element = receiver()
-
-    @handler(element, "in-point-changed")
-    @handler(element, "media-duration-changed")
     def _media_props_changed(self, obj, unused_start_duration):
         self.changed(True)
 
 ## interpolator callbacks
 
-    interpolator = receiver()
-
-    @handler(interpolator, "keyframe-removed")
-    def keyframeRemoved(self, unused_interpolator, keyframe, old_value=None):
+    def keyframeRemovedCb(self, unused_interpolator, keyframe, old_value=None):
         if keyframe in self.keyframes:
             del self.keyframes[keyframe]
             if keyframe is self._focused_kf:
                 self._focused_kf = None
         self.changed(False)
 
-    @handler(interpolator, "keyframe-added")
-    def curveChanged(self, unused_interpolator, unused_keyframe):
+    def keyframeAddedCb(self, unused_interpolator, unused_keyframe):
         self.changed(False)
 
-    @handler(interpolator, "keyframe-moved")
-    def curveChanged(self, unused_interpolator, unused_keyframe, old_value=None):
+    def keyframeMovedCb(self, unused_interpolator, unused_keyframe, old_value=None):
         self.changed(False)
 
 ## Zoomable interface overries
