@@ -28,7 +28,6 @@ from gi.repository import Clutter
 
 from pitivi.utils.loggable import Loggable
 from pitivi.utils.signal import Signallable
-from pitivi.utils.receiver import receiver, handler
 from pitivi.utils.ui import Point
 
 #from pitivi.utils.align import AutoAligner
@@ -269,8 +268,6 @@ class Controller(Loggable):
     # to be exposed in pygtk
     __DRAG_THRESHOLD__ = Point(0, 0)
 
-    _view = receiver()
-
     _dragging = None
     _canvas = None
     _cursor = None
@@ -290,6 +287,12 @@ class Controller(Loggable):
     def __init__(self, instance, view):
         object.__init__(self)
         self._view = view
+        self._view.connect("enter-event", self.enter_notify_event)
+        self._view.connect("leave-event", self.leave_notify_event)
+        self._view.connect("button-press-event", self.button_press_event)
+        self._view.connect("button-release-event", self.button_release_event)
+        self._view.connect("key-press-event", self.key_press_event)
+        self._view.connect("key-release-event", self.key_release_event)
         self.app = instance
         Loggable.__init__(self)
 
@@ -316,7 +319,6 @@ class Controller(Loggable):
     def canvas_left_event(self, item, event):
         self._dragging = None
 
-    @handler(_view, "enter-event")
     def enter_notify_event(self, item, event):
         self._event_common(item, event)
         Clutter.grab_keyboard(item)
@@ -327,7 +329,6 @@ class Controller(Loggable):
         self._ptr_within = True
         return self._handle_enter_leave or self._dragging
 
-    @handler(_view, "leave-event")
     def leave_notify_event(self, item, event):
         self._event_common(item, event)
         Clutter.ungrab_keyboard()
@@ -337,7 +338,6 @@ class Controller(Loggable):
             self.app.gui.get_window().set_cursor(ARROW)
         return self._handle_enter_leave or self._dragging
 
-    @handler(_view, "button-press-event")
     def button_press_event(self, item, event):
         self._event_common(item, event)
         if not self._canvas:
@@ -364,14 +364,12 @@ class Controller(Loggable):
             self.hover(item, event)
         return False
 
-    @handler(_view, "button-release-event")
     def button_release_event(self, item, event):
         self._event_common(item, event)
         self._drag_end(item, self._dragging, event)
         self._dragging = None
         return self._handle_mouse_up_down
 
-    @handler(_view, "key-press-event")
     def key_press_event(self, item, event):
         self._event_common(item, event)
         kv = event.keyval
@@ -381,7 +379,6 @@ class Controller(Loggable):
             self._control_down = True
         return self.key_press(kv)
 
-    @handler(_view, "key-release-event")
     def key_release_event(self, item, event):
         self._event_common(item, event)
         kv = event.keyval
