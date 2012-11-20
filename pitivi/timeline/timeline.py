@@ -317,7 +317,7 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
 
     def _selectionStart(self, item, target, event):
         self._selecting = True
-        self._marquee.props.visibility = GooCanvas.CanvasItemVisibility.VISIBLE
+        self._marquee.show()
         self._mousedown = self.from_event(event) + self._get_adjustment(False, True)
         self._marquee.props.width = 0
         self._marquee.props.height = 0
@@ -328,7 +328,7 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
     def _selectionEnd(self, item, target, event):
         self.pointer_ungrab(self.get_root_item(), event.time)
         self._selecting = False
-        self._marquee.props.visibility = GooCanvas.CanvasItemVisibility.INVISIBLE
+        self._marquee.hide()
         if not self._got_motion_notify:
             self._timeline.selection.setSelection([], 0)
             self.app.current.seeker.seek(Zoomable.pixelToNs(event.x))
@@ -387,10 +387,10 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
             self.debug("Snapping indicator at %d" % position)
             self._snap_indicator.props.x = Zoomable.nsToPixel(position)
             self._snap_indicator.props.height = self.height
-            self._snap_indicator.props.visibility = GooCanvas.CanvasItemVisibility.VISIBLE
+            self._snap_indicator.show()
 
     def _snapEndedCb(self, *args):
-        self._snap_indicator.props.visibility = GooCanvas.CanvasItemVisibility.INVISIBLE
+        self._snap_indicator.hide()
 
     def _buttonReleasedCb(self, canvas, event):
         # select clicked layer, if any
