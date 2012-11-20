@@ -696,8 +696,8 @@ class TrackTransition(TrackObject):
     """
     def __init__(self, instance, element, track, timeline, utrack):
         TrackObject.__init__(self, instance, element, track, timeline, utrack)
-        for thing in (self.bg, self._selec_indic, self.namebg, self.name):
-            self.add_child(thing, -1)
+        for thing in (self._selec_indic, self.namebg, self.name):
+            self.add_child(thing)
         if isinstance(element, GES.TrackVideoTransition):
             element.connect("notify::transition-type", self._changeVideoTransitionCb)
         self.movable = False
@@ -721,11 +721,11 @@ class TrackTitleSource(TrackObject):
     def __init__(self, instance, element, track, timeline, utrack):
         TrackObject.__init__(self, instance, element, track, timeline, utrack)
         #self.preview = Preview(self.app, element)
-        object_thingies = (self.bg, self._selec_indic,
+        object_thingies = (self._selec_indic,
                         self.start_handle, self.end_handle,
                         self.namebg, self.name)
         for thing in object_thingies:
-            self.add_child(thing, -1)
+            self.add_child(thing)
 
     def _getColor(self):
         return Clutter.Color.from_pixel(self.settings.titleClipBg)
@@ -835,7 +835,7 @@ class Track(Clutter.Actor, Zoomable, Loggable):
         elif isinstance(track_object, GES.TrackTitleSource):
             w = TrackTitleSource(self.app, track_object, self.track, self.timeline, self)
             self.widgets[track_object] = w
-            self.add_child(w, -1)
+            self.add_child(w)
         elif isinstance(track_object, GES.TrackFileSource):
             w = TrackFileSource(self.app, track_object, self.track, self.timeline, self)
             self.widgets[track_object] = w
@@ -845,13 +845,13 @@ class Track(Clutter.Actor, Zoomable, Loggable):
         if not isinstance(track_object, GES.TrackEffect) and track_object in self.widgets:
             w = self.widgets[track_object]
             del self.widgets[track_object]
-            self.remove_child(self.find_child(w))
+            self.remove_child(w)
             Zoomable.removeInstance(w)
 
     def _transitionAdded(self, transition):
         w = TrackTransition(self.app, transition, self.track, self.timeline, self)
         self.widgets[transition] = w
-        self.add_child(w, -1)
+        self.add_child(w)
         self.transitions.append(w)
         w.raise_(None)
 
