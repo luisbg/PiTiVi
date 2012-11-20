@@ -504,8 +504,9 @@ class TimelineControls(Gtk.VBox, Loggable):
                          [LAYER_CONTROL_TARGET_ENTRY], Gdk.DragAction.MOVE)
 
     def _sizeAllocatedCb(self, widget, alloc):
-        if self.get_children():
-            self.separator_height = self.get_children()[0].getSeparatorHeight()
+        children = self.get_children()
+        if children:
+            self.separator_height = children[0].getSeparatorHeight()
         self.app.gui.timeline_ui._canvas.updateTracks()
 
 ## Timeline callbacks
@@ -567,19 +568,21 @@ class TimelineControls(Gtk.VBox, Loggable):
 
     def _orderControls(self):
         # this works since every layer has audio and video
-        middle = len(self.get_children()) / 2
-        for child in self.get_children():
+        children = self.get_children()
+        middle = len(children) / 2
+        for child in children:
             if isinstance(child, VideoLayerControl):
                 self.reorder_child(child, child.layer.get_priority())
             elif isinstance(child, AudioLayerControl):
                 self.reorder_child(child, middle + child.layer.get_priority())
 
     def _hideLastSeparator(self):
-        if self.get_children():
-            for child in self.get_children():
+        children = self.get_children()
+        if children:
+            for child in children:
                 child.setSeparatorVisibility(True)
 
-            self.get_children()[-1].setSeparatorVisibility(False)
+            children[-1].setSeparatorVisibility(False)
 
     def _updatePopupMenus(self):
         """
