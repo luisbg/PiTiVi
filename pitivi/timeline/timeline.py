@@ -1397,29 +1397,29 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
 
     def _scrollEventCb(self, canvas, event):
         if event.flags & Clutter.ModifierType.SHIFT_MASK:
-            # shift + scroll => vertical (up/down) scroll
-            if event.direction == Gdk.ScrollDirection.UP:
+            # Vertical scroll.
+            if event.direction == Clutter.ScrollDirection.UP:
                 self.scroll_up()
-            elif event.direction == Gdk.ScrollDirection.DOWN:
+            elif event.direction == Clutter.ScrollDirection.DOWN:
                 self.scroll_down()
-            event.state &= ~gtk.gdk.SHIFT_MASK
-        if event.flags & Clutter.ModifierType.CONTROL_MASK:
-            # zoom + scroll => zooming (up: zoom in)
-            if event.direction == Gdk.ScrollDirection.UP:
+        elif event.flags & Clutter.ModifierType.CONTROL_MASK:
+            # Zooming, up=zoom in.
+            if event.direction == Clutter.ScrollDirection.UP:
                 Zoomable.zoomIn()
                 self.log("Setting 'zoomed_fitted' to False")
                 self.zoomed_fitted = False
                 return True
-            elif event.direction == Gdk.ScrollDirection.DOWN:
+            elif event.direction == Clutter.ScrollDirection.DOWN:
                 Zoomable.zoomOut()
                 self.log("Setting 'zoomed_fitted' to False")
                 self.zoomed_fitted = False
                 return True
             return False
         else:
-            if event.direction == Gdk.ScrollDirection.UP:
+            # Horizontal scroll.
+            if event.direction == Clutter.ScrollDirection.UP:
                 self.scroll_left()
-            elif event.direction == Gdk.ScrollDirection.DOWN:
+            elif event.direction == Clutter.ScrollDirection.DOWN:
                 self.scroll_right()
         return True
 
