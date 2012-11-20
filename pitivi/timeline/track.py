@@ -61,7 +61,7 @@ NAME_PADDING2X = 2 * NAME_PADDING
 GlobalSettings.addConfigOption('videoClipBg',
     section='user-interface',
     key='videoclip-background',
-    default=993737707,
+    default=0x3B3B3BEB,
     notify=True)
 
 PreferencesDialog.addColorPreference('videoClipBg',
@@ -72,7 +72,7 @@ PreferencesDialog.addColorPreference('videoClipBg',
 GlobalSettings.addConfigOption('audioClipBg',
     section='user-interface',
     key='audioclip-background',
-    default=996806336,
+    default=0x3B6A0EC0,
     notify=True)
 
 PreferencesDialog.addColorPreference('audioClipBg',
@@ -83,7 +83,7 @@ PreferencesDialog.addColorPreference('audioClipBg',
 GlobalSettings.addConfigOption('titleClipBg',
     section='user-interface',
     key='titleclip-background',
-    default=996806336,
+    default=0x3B6A0EC0,
     notify=True)
 
 PreferencesDialog.addColorPreference('titleClipBg',
@@ -495,6 +495,7 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
     expanded = property(getExpanded, setExpanded)
 
     def _getColor(self):
+        """Return a Clutter.Color object."""
         raise NotImplementedError
 
 ## Public API
@@ -707,7 +708,7 @@ class TrackTransition(TrackObject):
 
     def _getColor(self):
         #FIXME it's ugly :) Transitions are bright blue, independent of the user color settings
-        return 0x0089CFF0
+        return Clutter.Color.from_pixel(0x0089CFF0)
 
     def _changeVideoTransitionCb(self, transition, unused_transition_type):
         self.name.props.text = transition.props.transition_type.value_nick
@@ -727,7 +728,7 @@ class TrackTitleSource(TrackObject):
             self.add_child(thing, -1)
 
     def _getColor(self):
-        return self.settings.titleClipBg
+        return Clutter.Color.from_pixel(self.settings.titleClipBg)
 
     def _setElement(self, element):
         if self.element:
@@ -766,9 +767,9 @@ class TrackFileSource(TrackObject):
 
     def _getColor(self):
         if self.element.get_track().get_property("track-type") == GES.TrackType.AUDIO:
-            return Clutter.Color.new(50, 80, 120, 255)
+            return Clutter.Color.from_pixel(self.settings.audioClipBg)
         else:
-            return Clutter.Color.new(120, 80, 50, 255)
+            return Clutter.Color.from_pixel(self.settings.videoClipBg)
 
 
 class Track(Clutter.Actor, Zoomable, Loggable):
