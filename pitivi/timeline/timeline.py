@@ -59,7 +59,6 @@ from pitivi.dialogs.depsmanager import DepsManager
 from pitivi.dialogs.filelisterrordialog import FileListErrorDialog
 from pitivi.dialogs.prefs import PreferencesDialog
 
-from pitivi.utils.receiver import receiver, handler
 from pitivi.utils.loggable import Loggable
 from pitivi.utils.ui import SPACING, CANVAS_SPACING, \
     TYPE_PITIVI_FILESOURCE, VIDEO_EFFECT_TARGET_ENTRY, Point, \
@@ -185,6 +184,8 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
 
         self._timeline = timeline
         self.settings = instance.settings
+        self.zoomChanged()
+        self.settings.connect("edgeSnapDeadbandChanged", self._edgeSnapDeadbandChangedCb)
         self.connect("draw", self.drawCb)
 
         self.app = instance
@@ -391,13 +392,6 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
         # also hide snap indicator
         self._snapEndedCb()
 
-## settings callbacks
-    def _setSettings(self):
-        self.zoomChanged()
-
-    settings = receiver(_setSettings)
-
-    @handler(settings, "edgeSnapDeadbandChanged")
     def _edgeSnapDeadbandChangedCb(self, settings):
         self.zoomChanged()
 
