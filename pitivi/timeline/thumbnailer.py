@@ -44,7 +44,6 @@ from pitivi.configure import get_pixmap_dir
 import pitivi.utils as utils
 
 from pitivi.utils.misc import big_to_cairo_alpha_mask, big_to_cairo_red_mask, big_to_cairo_green_mask, big_to_cairo_blue_mask
-from pitivi.utils.receiver import receiver, handler
 from pitivi.utils.timeline import Zoomable
 from pitivi.utils.signal import Signallable
 from pitivi.utils.loggable import Loggable
@@ -804,6 +803,10 @@ class Preview(GooCanvas.CanvasItemSimple, GooCanvas.CanvasItem, Zoomable):
         self.app = instance
         self.height = float(height)
         self.element = element
+        self.element.connect("notify::in-point", self._mediaPropsChangedCb)
+        self.element.connect("notify::duration", self._mediaPropsChangedCb)
+        self.previewer = get_preview_for_object(self.app, self.element)
+        self.previewer.connect("update", self._previewerUpdatedCb)
         self.props.pointer_events = False
         # ghetto hack
         self.hadj = instance.gui.timeline_ui.hadj
@@ -820,22 +823,12 @@ class Preview(GooCanvas.CanvasItemSimple, GooCanvas.CanvasItem, Zoomable):
 
 ## element callbacks
 
-    def _set_element(self):
-        self.previewer = get_preview_for_object(self.app,
-            self.element)
-    element = receiver(setter=_set_element)
-
-    @handler(element, "notify::in-point")
-    @handler(element, "notify::duration")
-    def _media_props_changed(self, obj, unused_start_duration):
+    def _mediaPropsChangedCb(self, obj, unused_start_duration):
         self.changed(True)
 
 ## previewer callbacks
 
-    previewer = receiver()
-
-    @handler(previewer, "update")
-    def _update_preview(self, previewer, segment):
+    def _previewerUpdatedCb(self, previewer, segment):
         # if segment is none we are not just drawing a new thumbnail, so we
         # should update bounds
         if segment is None:
@@ -843,7 +836,7 @@ class Preview(GooCanvas.CanvasItemSimple, GooCanvas.CanvasItem, Zoomable):
         else:
             self.changed(False)
 
-## Zoomable interface overries
+## Zoomable interface overrides
 
     def zoomChanged(self):
         self.changed(True)
