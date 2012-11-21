@@ -154,7 +154,7 @@ class ScaleRuler(Gtk.DrawingArea, Zoomable, Loggable):
         # If the user interacts with the ruler, have the timeline steal focus
         # from other widgets. This reactivates keyboard shortcuts for playback.
         timeline = self.app.gui.timeline_ui
-        timeline._canvas.grab_focus(timeline._root_item)
+        timeline._canvas.grab_focus()
         return False
 
     def do_motion_notify_event(self, event):
