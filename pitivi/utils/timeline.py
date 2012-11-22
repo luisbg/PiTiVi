@@ -301,10 +301,6 @@ class Controller(Loggable):
 
 ## convenience functions
 
-    def from_event(self, event):
-        """returns the coordinates of an event"""
-        return Point(*self._canvas.convert_from_pixels(event.x, event.y))
-
     def from_item_event(self, item, event):
         return Point(event.x, event.y)
 
