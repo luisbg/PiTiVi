@@ -201,22 +201,27 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
         self._snap_indicator.set_position(0, 0)
         self._snap_indicator.set_color(Clutter.Color.new(133, 192, 230, 255))
 
+        self._marquee = Clutter.Rectangle()
+        self._marquee.set_color(Clutter.Color.new(130, 130, 255, 64))
+
         self.stage.add_child(self._playhead)
         self.stage.add_child(self._snap_indicator)
+        self.stage.add_child(self._marquee)
         self.stage.set_color(Clutter.Color.new(50, 50, 50, 255))
 
-        #self.stage.connect('key-press-event', self.key_press) # This Works!
-        #texture = Clutter.Texture.new_from_file("/home/mathieu/Pictures/1344547891223.jpg")
-        #texture.set_position(0, 0)
-        #self.stage.add_actor(texture)
         self.set_size_request(-1, -1)
 
         self.show_all()
+        self._marquee.hide()
+
+        self.connect("button-press-event", self._selectionStart)
+        self.connect("motion-notify-event", self._selectionDrag)
+        self.connect("button-release-event", self._selectionEnd)
 
     def from_event(self, event):
         x, y = event.x, event.y
         x += self.app.gui.timeline_ui.hadj.get_value()
-        return Point(*self.convert_from_pixels(x, y))
+        return Point(x, y)
 
     def setExpanded(self, track_object, expanded):
         track_ui = None
@@ -305,7 +310,7 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
         return Point(self.app.gui.timeline_ui.hadj.get_value() * xadj,
                      self.app.gui.timeline_ui.vadj.get_value() * yadj)
 
-    def _selectionDrag(self, item, target, event):
+    def _selectionDrag(self, item, event):
         if self._selecting:
             self._got_motion_notify = True
             cur = self.from_event(event) - self._get_adjustment(True, False)
@@ -315,18 +320,20 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
             return True
         return False
 
-    def _selectionStart(self, item, target, event):
+    def _selectionStart(self, item, event):
         self._selecting = True
         self._marquee.show()
         self._mousedown = self.from_event(event) + self._get_adjustment(False, True)
         self._marquee.props.width = 0
         self._marquee.props.height = 0
-        self.pointer_grab(self.get_root_item(), Gdk.EventMask.POINTER_MOTION_MASK |
-            Gdk.EventMask.BUTTON_RELEASE_MASK, self._cursor, event.time)
+        # Grab the pointer until the selection is done.
+        Clutter.grab_pointer(self.stage)
+        # Allow us to receive keyboard events.
+        self.grab_focus()
         return True
 
-    def _selectionEnd(self, item, target, event):
-        self.pointer_ungrab(self.get_root_item(), event.time)
+    def _selectionEnd(self, item, event):
+        Clutter.ungrab_pointer()
         self._selecting = False
         self._marquee.hide()
         if not self._got_motion_notify:
@@ -335,9 +342,9 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
         elif self._timeline is not None:
             self._got_motion_notify = False
             mode = 0
-            if event.get_state()[1] & Gdk.ModifierType.SHIFT_MASK:
+            if event.get_state() & Gdk.ModifierType.SHIFT_MASK:
                 mode = 1
-            if event.get_state()[1] & Gdk.ModifierType.CONTROL_MASK:
+            if event.get_state() & Gdk.ModifierType.CONTROL_MASK:
                 mode = 2
             selected = self._objectsUnderMarquee()
             self._timeline.selection.setSelection(self._objectsUnderMarquee(), mode)
