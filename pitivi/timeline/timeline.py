@@ -322,6 +322,7 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
 
     def _selectionStart(self, item, event):
         self._selecting = True
+        self._got_motion_notify = False
         self._marquee.show()
         self._mousedown = self.from_event(event) + self._get_adjustment(False, True)
         self._marquee.props.width = 0
@@ -340,7 +341,6 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
             self._timeline.selection.setSelection([], 0)
             self.app.current.seeker.seek(Zoomable.pixelToNs(event.x))
         elif self._timeline is not None:
-            self._got_motion_notify = False
             mode = SELECT
             if event.get_state() & Gdk.ModifierType.SHIFT_MASK:
                 mode = UNSELECT
@@ -348,6 +348,7 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
                 mode = SELECT_ADD
             selected = self._objectsUnderMarquee()
             self._timeline.selection.setSelection(self._objectsUnderMarquee(), mode)
+        self._got_motion_notify = False
         return True
 
     def _objectsUnderMarquee(self):
