@@ -53,7 +53,7 @@ from pitivi.settings import GlobalSettings
 
 from track import Track, TrackObject
 from layer import VideoLayerControl, AudioLayerControl
-from pitivi.utils.timeline import EditingContext, SELECT, Zoomable
+from pitivi.utils.timeline import EditingContext, SELECT, UNSELECT, SELECT_ADD, Zoomable
 
 from pitivi.dialogs.depsmanager import DepsManager
 from pitivi.dialogs.filelisterrordialog import FileListErrorDialog
@@ -341,11 +341,11 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
             self.app.current.seeker.seek(Zoomable.pixelToNs(event.x))
         elif self._timeline is not None:
             self._got_motion_notify = False
-            mode = 0
+            mode = SELECT
             if event.get_state() & Gdk.ModifierType.SHIFT_MASK:
-                mode = 1
+                mode = UNSELECT
             if event.get_state() & Gdk.ModifierType.CONTROL_MASK:
-                mode = 2
+                mode = SELECT_ADD
             selected = self._objectsUnderMarquee()
             self._timeline.selection.setSelection(self._objectsUnderMarquee(), mode)
         return True
