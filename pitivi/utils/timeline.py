@@ -33,14 +33,14 @@ from pitivi.utils.ui import Point
 #from pitivi.utils.align import AutoAligner
 
 # Selection modes
+# Set the selection to the given set.
 SELECT = 0
-"""Set the selection to the given set."""
+# Remove the given set from the selection.
 UNSELECT = 1
-"""Remove the given set from the selection."""
+# Extend the selection with the given set.
 SELECT_ADD = 2
-"""Extend the selection with the given set"""
+# Select a range of clips.
 SELECT_BETWEEN = 3
-"""Select a range of clips"""
 
 
 #------------------------------------------------------------------------------#
@@ -52,12 +52,12 @@ class TimelineError(Exception):
 
 class Selection(Signallable):
     """
-    A collection of L{GES.TimelineObject}.
+    A set of L{GES.TimelineObject} representing a selection on the Timeline.
 
     Signals:
-     - C{selection-changed} : The contents of the L{GES.Selection} changed.
+     - C{selection-changed} : The contents of the selection changed.
 
-    @ivar selected: Set of selected L{GES.TrackObject}
+    @ivar selected: Set of L{TimelineObject}.
     @type selected: C{list}
     """
 
@@ -68,13 +68,14 @@ class Selection(Signallable):
         self.selected = set([])
         self.last_single_obj = None
 
-    def setToObj(self, obj, mode):
+    def setToObj(self, timeline_object, mode):
         """
         Convenience method for calling L{setSelection} with a single L{GES.TimelineObject}
 
+        @type timeline_object: L{GES.TimelineObject}
         @see: L{setSelection}
         """
-        self.setSelection(set([obj]), mode)
+        self.setSelection([timeline_object], mode)
 
     def addTimelineObject(self, timeline_object):
         """
@@ -87,8 +88,9 @@ class Selection(Signallable):
         """
         if timeline_object in self.timeline_objects:
             raise TimelineError("TrackObject already in this selection")
+        self.setToObj(timeline_object, SELECT_ADD)
 
-    def setSelection(self, objs, mode):
+    def setSelection(self, objects, mode):
         """
         Update the current selection.
 
@@ -97,19 +99,19 @@ class Selection(Signallable):
          - L{UNSELECT} : the same minus the provided selection.
          - L{SELECT_ADD} : extended with the provided selection.
 
-        @param selection: The list of timeline objects to update the selection with.
-        @param mode: The type of update to apply. Can be C{SELECT},C{UNSELECT} or C{SELECT_ADD}
+        @param objects: The L{TimelineObject}s or L{TrackObject}s to update the selection with.
+        @param mode: The type of update to apply. Can be C{SELECT}, C{UNSELECT} or C{SELECT_ADD}
 
-        @see: L{setToObj}
         """
         # get a list of timeline objects
         selection = set()
-        for obj in objs:
-            # FIXME GES break, handle the fact that we have unlinked objects in GES
-            if isinstance(obj, GES.TrackObject):
+        for obj in objects:
+            if isinstance(obj, GES.TimelineObject):
+                selection.add(obj)
+            elif isinstance(obj, GES.TrackObject):
                 selection.add(obj.get_timeline_object())
             else:
-                selection.add(obj)
+                raise TimelineError("Don't know how to add to selection: %s" % obj)
 
         old_selection = self.selected
         if mode == SELECT_ADD:
