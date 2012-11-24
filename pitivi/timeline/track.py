@@ -129,8 +129,6 @@ def text_size(text):
     return tmp.width, tmp.height
 
 
-#--------------------------------------------------------------#
-#                            Main Classes                      #
 class Selected(Signallable):
     """
     A simple class that let us emit a selected-changed signal
@@ -374,6 +372,17 @@ setattr(GooCanvas.CanvasItem, "raise_", raise_new)
 
 
 class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
+    """
+    An element of a Track, for example an audio clip.
+
+    An instance appears as a rectangle on the Timeline.
+    See subclasses for what types of objects it can represent.
+
+    @type element: L{GES.TrackObject}
+    @type track: L{GES.Track}
+    @type timeline: L{Timeline}
+    @type utrack: L{Track}
+    """
 
     class Controller(TrackObjectController):
 
@@ -415,7 +424,6 @@ class TrackObject(View, Clutter.Actor, Zoomable, Loggable):
                 timeline.selection.setToObj(element, SELECT)
 
     def __init__(self, instance, element, track, timeline, utrack):
-
         Clutter.Actor.__init__(self)
         self.set_reactive(True)
 
@@ -774,8 +782,14 @@ class TrackFileSource(TrackObject):
 
 class Track(Clutter.Actor, Zoomable, Loggable):
     """
-    Groups all TrackObjects of one Track
+    An output track, for example the audio track.
+
+    Groups TrackObject instances.
+
+    @type track: L{GES.TrackObject}
+    @type timeline: L{Timeline}
     """
+
     __gtype_name__ = 'Track'
 
     def __init__(self, instance, track, timeline=None):
