@@ -232,6 +232,32 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
 
         track_ui.setExpanded(expanded)
 
+    def getTrackObjectsInArea(self, rect=None, left=0, top=0, width=0, height=0):
+        """Yield the L{GES.TrackObject}s intersecting the specified region."""
+        if rect:
+            left = rect.get_x()
+            top = rect.get_y()
+            right = left + rect.get_width()
+            bottom = top + rect.get_height()
+        else:
+            right = left + width
+            bottom = top + height
+        print left, top, width, height
+        for child in self.stage.get_children():
+            if not isinstance(child, Track):
+                continue
+            print child, child.get_x(), child.get_y()
+            for c in child.get_children():
+                print c.get_x(), c.get_y(), c.get_width(), c.get_height(), c.element.get_timeline_object()
+                if (child.get_x() + c.get_x() > right
+                        or child.get_y() + c.get_y() > bottom
+                        or child.get_x() + c.get_x() + c.get_width() < left
+                        or child.get_y() + c.get_y() + c.get_height() < top):
+                    print "no", c
+                    continue
+                print "yes", c
+                yield c.element
+
 ## sets the cursor as appropriate
 
     def _mouseEnterCb(self, unused_item, unused_target, event):
@@ -261,42 +287,6 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
     _mousedown = None
     _marquee = None
     _got_motion_notify = False
-
-    def getItemsInArea(self, x1, y1, x2, y2):
-        '''
-        Permits to get the Non UI L{Track}/L{TrackObject} in a list of set
-        corresponding to the L{Track}/L{TrackObject} which are in the are
-
-        @param x1: The horizontal coordinate of the up left corner of the area
-        @type x1: An C{int}
-        @param y1: The vertical coordinate of the up left corner of the area
-        @type y1: An C{int}
-        @param x2: The horizontal coordinate of the down right area corner
-        @type x2: An C{int}
-        @param x2: The vertical coordinate of the down right corner of the area
-        @type x2: An C{int}
-
-        @returns: A list of L{Track}, L{TrackObject} tuples
-        '''
-        bounds = GooCanvas.CanvasBounds()
-        bounds.x1 = x1
-        bounds.x2 = x2
-        bounds.y1 = y1
-        bounds.y2 = y2
-        items = self.get_items_in_area(bounds, True, True, True)
-        if not items:
-            return [], []
-
-        tracks = set()
-        track_objects = set()
-
-        for item in items:
-            if isinstance(item, Track):
-                tracks.add(item.track)
-            elif isinstance(item, TrackObject):
-                track_objects.add(item.element)
-
-        return tracks, track_objects
 
     def _normalize(self, p1, p2):
         w, h = p1 - p2
@@ -346,17 +336,10 @@ class ClutterTimeline(GtkClutter.Embed, Zoomable, Loggable):
                 mode = UNSELECT
             if event.get_state() & Gdk.ModifierType.CONTROL_MASK:
                 mode = SELECT_ADD
-            selected = self._objectsUnderMarquee()
-            self._timeline.selection.setSelection(self._objectsUnderMarquee(), mode)
+            selected = self.getTrackObjectsInArea(rect=self._marquee)
+            self._timeline.selection.setSelection(selected, mode)
         self._got_motion_notify = False
         return True
-
-    def _objectsUnderMarquee(self):
-        items = self.get_items_in_area(self._marquee.get_bounds(), True, True, True)
-        if items:
-            return set((item.element for item in items if isinstance(item,
-                TrackObject) and item.bg in items))
-        return set()
 
 ## playhead implementation
 
@@ -1252,7 +1235,7 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
         else:
             if self.app.current.timeline.props.duration == 0:
                 return False
-            timeline_objs = self._getTimelineObjectUnderMouse(x, y)
+            timeline_objs = self._getTimelineObjectsAt(x, y)
             if timeline_objs:
                 # FIXME make a util function to add effects
                 # instead of copy/pasting it from cliproperties
@@ -1285,14 +1268,11 @@ class Timeline(Gtk.Table, Loggable, Zoomable):
         Gtk.drag_finish(context, True, False, timestamp)
         return True
 
-    def _getTimelineObjectUnderMouse(self, x, y):
+    def _getTimelineObjectsAt(self, x, y):
+        """Get the L{GES.TimelineObject}s backing up the TrackObjects at (x, y)."""
         timeline_objs = []
-        items_in_area = self._canvas.getItemsInArea(x, y, x + 1, y + 1)
-
-        track_objects = [obj for obj in items_in_area[1]]
-        for track_object in track_objects:
+        for track_object in self._canvas.getTrackObjectsInArea(left=x, top=y):
             timeline_objs.append(track_object.get_timeline_object())
-
         return timeline_objs
 
     def _showSaveScreenshotDialog(self):
